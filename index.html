@@ -4,97 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fracas (MS-DOS)</title>
-    <!-- Configurações PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
+    <!-- JS-DOS v8 -->
+    <script src="https://v3.js-dos.com/8.0/js-dos.js"></script>
+    <link href="https://v3.js-dos.com/8.0/js-dos.css" rel="stylesheet">
     <style>
         body, html {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #000;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            background-color: #000; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
-        /* O canvas onde o jogo será renderizado */
-        canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Mantém a proporção do jogo sem esticar */
+        #root {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
         }
-        
-        /* Estilos dos Controles Virtuais */
         #touch-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
-            box-sizing: border-box;
-            pointer-events: none; /* Deixa clicar apenas nos botões */
+            position: absolute; bottom: 20px; left: 0; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 20px;
+            box-sizing: border-box; pointer-events: none; z-index: 100;
         }
         #dpad, #action-btns {
-            pointer-events: auto;
-            display: flex;
-            gap: 10px;
-            align-items: center;
+            pointer-events: auto; display: flex; gap: 10px; align-items: center;
         }
-        #dpad {
-            text-align: center;
-        }
+        #dpad { text-align: center; }
         .btn {
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            color: white;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            user-select: none;
-            touch-action: manipulation;
+            background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(255, 255, 255, 0.6);
+            color: white; border-radius: 50%; width: 60px; height: 60px;
+            font-size: 24px; user-select: none; touch-action: manipulation;
         }
-        .btn:active {
-            background: rgba(255, 255, 255, 0.7);
-        }
-        .action {
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        /* Estilo do botão de tela cheia */
+        .btn:active { background: rgba(255, 255, 255, 0.7); }
+        .action { border-radius: 10px; font-size: 14px; font-weight: bold; }
         #btn-fullscreen {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            color: white;
-            font-size: 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            z-index: 100;
+            position: absolute; top: 20px; right: 20px; padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(255, 255, 255, 0.6);
+            color: white; font-size: 16px; border-radius: 10px; cursor: pointer; z-index: 100;
         }
-        #btn-fullscreen:active {
-            background: rgba(255, 255, 255, 0.7);
-        }
+        #btn-fullscreen:active { background: rgba(255, 255, 255, 0.7); }
     </style>
-    <!-- Importando o núcleo do js-dos v6.22 (mais fácil de usar com arquivos zip soltos) -->
-    <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
 </head>
 <body>
-    <canvas id="jsdos"></canvas>
-    
-    <!-- Botão de Tela Cheia -->
+    <div id="root"></div>
     <button id="btn-fullscreen" onclick="ativarTelaCheia()">🔲 Tela Cheia</button>
 
-    <!-- Controles de Toque Virtuais -->
     <div id="touch-controls">
         <div id="dpad">
             <button class="btn" ontouchstart="simulaTecla(38, true)" ontouchend="simulaTecla(38, false)">⬆️</button><br>
@@ -110,13 +61,14 @@
     </div>
 
     <script>
-        // Função para ativar Tela Cheia
+        let ciInstance = null;
+
         function ativarTelaCheia() {
             let elem = document.documentElement;
             if (!document.fullscreenElement) {
                 if (elem.requestFullscreen) { elem.requestFullscreen(); }
-                else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } // Safari/iOS
-                else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } // IE11
+                else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+                else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
             } else {
                 if (document.exitFullscreen) { document.exitFullscreen(); }
                 else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
@@ -124,29 +76,20 @@
             }
         }
 
-        // Função para simular toques no teclado para o emulador
+        // Função para injetar teclas usando a API nativa do JS-DOS v8
         function simulaTecla(keyCode, isKeyDown) {
-            const evento = new KeyboardEvent(isKeyDown ? 'keydown' : 'keyup', {
-                keyCode: keyCode,
-                which: keyCode,
-                bubbles: true
-            });
-            document.dispatchEvent(evento);
-            document.getElementById('jsdos').dispatchEvent(evento);
+            if (ciInstance) {
+                ciInstance.sendKeyEvent(keyCode, isKeyDown);
+            }
         }
 
-        // Evita que toques duplos deem zoom na tela
         document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
 
-        Dos(document.getElementById("jsdos"), { 
-            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js" 
-        }).ready(function (fs, main) {
-            fs.extract("fracas.zip").then(function () {
-                main([
-                    "-c", "config -set joystick joysticktype=none",
-                    "-c", "FRACAS.EXE"
-                ]);
-            });
+        // Inicializa JS-DOS v8 e roda o nosso pacote game.zip
+        emulators.pathPrefix = "https://v3.js-dos.com/8.0/";
+        Dos(document.getElementById("root")).run("game.zip").then(function(ci) {
+            // Guarda a Interface de Comando (ci) para os botões virtuais usarem
+            ciInstance = ci;
         });
     </script>
 </body>
