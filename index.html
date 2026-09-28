@@ -25,6 +25,65 @@
             height: 100%;
             object-fit: contain; /* Mantém a proporção do jogo sem esticar */
         }
+        
+        /* Estilos dos Controles Virtuais */
+        #touch-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            pointer-events: none; /* Deixa clicar apenas nos botões */
+        }
+        #dpad, #action-btns {
+            pointer-events: auto;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #dpad {
+            text-align: center;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            color: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .btn:active {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        .action {
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Estilo do botão de tela cheia */
+        #btn-fullscreen {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            color: white;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 100;
+        }
+        #btn-fullscreen:active {
+            background: rgba(255, 255, 255, 0.7);
+        }
     </style>
     <!-- Importando o núcleo do js-dos v6.22 (mais fácil de usar com arquivos zip soltos) -->
     <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
@@ -32,14 +91,57 @@
 <body>
     <canvas id="jsdos"></canvas>
     
+    <!-- Botão de Tela Cheia -->
+    <button id="btn-fullscreen" onclick="ativarTelaCheia()">🔲 Tela Cheia</button>
+
+    <!-- Controles de Toque Virtuais -->
+    <div id="touch-controls">
+        <div id="dpad">
+            <button class="btn" ontouchstart="simulaTecla(38, true)" ontouchend="simulaTecla(38, false)">⬆️</button><br>
+            <button class="btn" ontouchstart="simulaTecla(37, true)" ontouchend="simulaTecla(37, false)">⬅️</button>
+            <button class="btn" ontouchstart="simulaTecla(40, true)" ontouchend="simulaTecla(40, false)">⬇️</button>
+            <button class="btn" ontouchstart="simulaTecla(39, true)" ontouchend="simulaTecla(39, false)">➡️</button>
+        </div>
+        <div id="action-btns">
+            <button class="btn action" ontouchstart="simulaTecla(13, true)" ontouchend="simulaTecla(13, false)">ENTER</button>
+            <button class="btn action" ontouchstart="simulaTecla(32, true)" ontouchend="simulaTecla(32, false)">ESPAÇO</button>
+            <button class="btn action" ontouchstart="simulaTecla(17, true)" ontouchend="simulaTecla(17, false)">CTRL</button>
+        </div>
+    </div>
+
     <script>
-        // Inicializa o DOSBox na web
+        // Função para ativar Tela Cheia
+        function ativarTelaCheia() {
+            let elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) { elem.requestFullscreen(); }
+                else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } // Safari/iOS
+                else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } // IE11
+            } else {
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+                else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+                else if (document.msExitFullscreen) { document.msExitFullscreen(); }
+            }
+        }
+
+        // Função para simular toques no teclado para o emulador
+        function simulaTecla(keyCode, isKeyDown) {
+            const evento = new KeyboardEvent(isKeyDown ? 'keydown' : 'keyup', {
+                keyCode: keyCode,
+                which: keyCode,
+                bubbles: true
+            });
+            document.dispatchEvent(evento);
+            document.getElementById('jsdos').dispatchEvent(evento);
+        }
+
+        // Evita que toques duplos deem zoom na tela
+        document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
+
         Dos(document.getElementById("jsdos"), { 
             wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js" 
         }).ready(function (fs, main) {
-            // Extrai o arquivo zip que está na mesma pasta do HTML
             fs.extract("fracas.zip").then(function () {
-                // Desativa o joystick para evitar "drift" e roda o executável
                 main([
                     "-c", "config -set joystick joysticktype=none",
                     "-c", "FRACAS.EXE"
