@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fracas (MS-DOS)</title>
+    <!-- Configurações PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <style>
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* O canvas onde o jogo será renderizado */
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Mantém a proporção do jogo sem esticar */
+        }
+    </style>
+    <!-- Importando o núcleo do js-dos v6.22 (mais fácil de usar com arquivos zip soltos) -->
+    <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
+</head>
+<body>
+    <canvas id="jsdos"></canvas>
+    
+    <script>
+        // Inicializa o DOSBox na web
+        Dos(document.getElementById("jsdos"), { 
+            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js" 
+        }).ready(function (fs, main) {
+            // Extrai o arquivo zip que está na mesma pasta do HTML
+            fs.extract("fracas.zip").then(function () {
+                // Desativa o joystick para evitar "drift" e roda o executável
+                main([
+                    "-c", "config -set joystick joysticktype=none",
+                    "-c", "FRACAS.EXE"
+                ]);
+            });
+        });
+    </script>
+</body>
+</html>
